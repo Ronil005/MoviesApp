@@ -16,6 +16,7 @@ class PopularMoviesViewModel @Inject constructor(
     private val getPopularMoviesUseCase: GetPopularMoviesUseCase
 ) : ViewModel() {
 
+    private val maxMoviesCount = 10
     private val _state = mutableStateOf(PopularMoviesState())
     val state: State<PopularMoviesState> = _state
 
@@ -27,12 +28,19 @@ class PopularMoviesViewModel @Inject constructor(
         getPopularMoviesUseCase().onEach { result ->
             when (result) {
                 is Resource.Success -> {
-                    _state.value = PopularMoviesState(popularMovies = result.data.orEmpty())
+                    _state.value = result.data?.run {
+                        PopularMoviesState(popularMovies = take(maxMoviesCount))
+                    } ?: kotlin.run {
+                        PopularMoviesState(error = "Movies not found")
+                    }
+                    _state.value = PopularMoviesState()
                 }
+
                 is Resource.Failure -> {
                     _state.value =
                         PopularMoviesState(error = result.message ?: "An unexpected error occurred")
                 }
+
                 is Resource.Loading -> {
                     _state.value = PopularMoviesState(isLoading = true)
                 }
